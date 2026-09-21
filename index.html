@@ -59,6 +59,38 @@ body{
   font-weight:700;
   text-shadow:0 1px 0 rgba(255,255,255,.45);
 }
+.topright{
+  display:flex;
+  align-items:center;
+  gap:10px;
+}
+/* small brass note, like a clasp on the cover */
+.music{
+  position:relative;
+  width:27px;height:27px;
+  flex:none;
+  border-radius:50%;
+  border:1px solid rgba(169,128,63,.5);
+  background:linear-gradient(#fdf1e2,#ecd6bd);
+  color:#7c3450;
+  font-size:13px;
+  line-height:1;
+  cursor:pointer;
+  display:grid;place-items:center;
+  box-shadow:0 2px 6px rgba(62,22,38,.2),inset 0 1px 0 rgba(255,255,255,.7);
+  transition:opacity .25s ease,transform .2s ease;
+}
+.music:hover{transform:translateY(-1px)}
+.music.off{opacity:.5}
+/* a struck-through note reads as muted at a glance */
+.music.off::after{
+  content:"";
+  position:absolute;
+  left:4px;right:4px;top:50%;
+  height:1px;
+  background:#7c3450;
+  transform:rotate(-38deg);
+}
 .counter{
   font-size:10px;
   letter-spacing:.2em;
@@ -663,7 +695,10 @@ h2{
 <div class="app">
   <header class="topbar">
     <div class="brand">A birthday story for Oluwafolabomi</div>
-    <div class="counter" id="counter">Cover</div>
+    <div class="topright">
+      <div class="counter" id="counter">Cover</div>
+      <button class="music off" id="music" aria-pressed="false" aria-label="Turn music on">&#9834;</button>
+    </div>
   </header>
 
   <div class="book-wrap" id="bookWrap">
@@ -842,6 +877,10 @@ h2{
     <button class="nav" id="next" aria-label="Next page">›</button>
   </footer>
 </div>
+
+<audio id="tune" loop preload="none">
+  <source src="media/love-me-jeje.mp3" type="audio/mpeg">
+</audio>
 
 <script>
 (() => {
@@ -1109,6 +1148,78 @@ h2{
 
   sync();
   resetTransforms();
+})();
+
+/* ---------- the record on the turntable ----------
+   Browsers refuse to start sound on their own, so the music waits for
+   the same gesture that opens the book, then fades up under it. */
+(() => {
+  const tune=document.getElementById('tune');
+  const btn=document.getElementById('music');
+  if(!tune||!btn) return;
+
+  const KEY='book-music';
+  const FULL=.55;          /* under the page, never over it */
+  const DUCK=.05;          /* out of the way while the video speaks */
+  let wanted=true;
+  try{ if(localStorage.getItem(KEY)==='off') wanted=false; }catch(_e){}
+  let started=false;
+  let fading=0;
+
+  function fadeTo(target,ms) {
+    cancelAnimationFrame(fading);
+    const from=tune.volume, t0=performance.now();
+    (function step(now) {
+      const k=ms>0 ? Math.min(1,(now-t0)/ms) : 1;
+      tune.volume=Math.max(0,Math.min(1,from+(target-from)*k));
+      if(k<1) fading=requestAnimationFrame(step);
+    })(t0);
+  }
+
+  function paint() {
+    btn.classList.toggle('off',!wanted);
+    btn.setAttribute('aria-pressed',String(wanted));
+    btn.setAttribute('aria-label',wanted?'Turn music off':'Turn music on');
+  }
+
+  function start() {
+    if(started||!wanted) return;
+    started=true;
+    tune.volume=0;
+    const p=tune.play();
+    if(p&&p.catch) p.then(()=>fadeTo(FULL,2600)).catch(()=>{started=false});
+    else fadeTo(FULL,2600);
+  }
+
+  /* any first touch of the book counts as permission to play */
+  const kick=()=>start();
+  document.addEventListener('pointerdown',kick);
+  document.addEventListener('keydown',kick);
+
+  btn.addEventListener('click',e=>{
+    e.stopPropagation();
+    wanted=!wanted;
+    try{localStorage.setItem(KEY,wanted?'on':'off')}catch(_e){}
+    if(wanted) start();
+    else{ fadeTo(0,600); setTimeout(()=>tune.pause(),640); }
+    paint();
+  });
+
+  /* her voice on the video wins over the music */
+  const vid=document.querySelector('video');
+  if(vid) {
+    vid.addEventListener('play',()=>{ if(started&&wanted) fadeTo(DUCK,400) });
+    ['pause','ended'].forEach(ev=>
+      vid.addEventListener(ev,()=>{ if(started&&wanted) fadeTo(FULL,900) }));
+  }
+
+  /* don't sing to an empty room */
+  document.addEventListener('visibilitychange',()=>{
+    if(document.hidden){ if(started&&!tune.paused) tune.pause() }
+    else if(started&&wanted){ const p=tune.play(); if(p&&p.catch) p.catch(()=>{}) }
+  });
+
+  paint();
 })();
 </script>
 </body>

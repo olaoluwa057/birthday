@@ -8,6 +8,7 @@ swiping, or using the arrow keys.
 | File | What it is |
 | --- | --- |
 | `index.html` | The whole site: markup, styles, script, and every photo/video embedded as base64. No build step, no dependencies. |
+| `media/love-me-jeje.mp3` | The soundtrack — Tems, *Love Me JeJe*. Kept as a separate file so it streams instead of delaying the page. |
 | `vercel.json` | Vercel config (`cleanUrls`). |
 
 ## Viewing it locally
@@ -18,6 +19,15 @@ Open `index.html` in a browser, or serve the folder:
 python3 -m http.server 8000
 # then visit http://localhost:8000
 ```
+
+## Music
+
+Browsers will not start audio on their own, so the track begins on the first
+gesture that opens the book and fades up under the pages. The note in the top
+corner mutes it, and that choice is remembered on the next visit. Music ducks
+while the video is playing and pauses when the tab is hidden.
+
+To use a different song, replace `media/love-me-jeje.mp3` — no code changes.
 
 ## Publishing
 
