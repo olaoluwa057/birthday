@@ -377,6 +377,21 @@ h2{
   color:var(--ink2);
 }
 .copy + .copy{margin-top:11px}
+/* the blessing sits a little apart from the rest, in a deeper ink */
+.blessing{
+  color:var(--rose);
+  margin-top:15px;
+  padding-top:14px;
+  position:relative;
+}
+.blessing::before{
+  content:"";
+  position:absolute;
+  top:0;left:50%;
+  width:74px;height:1px;
+  transform:translateX(-50%);
+  background:linear-gradient(90deg,transparent,rgba(169,128,63,.75),transparent);
+}
 /* gilt divider with a centre diamond */
 .line{
   position:relative;
@@ -812,6 +827,7 @@ h2{
             <div class="line" style="margin:22px auto"></div>
             <p class="copy">Thank you for your smile, your heart, your joy, and all the beautiful memories we keep creating together.</p>
             <p class="copy">I pray this new year brings you peace, happiness, growth, and everything beautiful your heart desires.</p>
+            <p class="copy blessing">May the work of ministry prosper in your hands, and may you raise more men in these times of growth and growing.</p>
             <p class="copy">I’m so grateful for you, Oluwafolabomi. 💗</p>
           </div>
         </div>
