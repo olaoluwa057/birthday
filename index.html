@@ -1192,7 +1192,7 @@ h2{
   }
 
   /* any first touch of anything counts as permission to play */
-  const kick=()=>start();
+  const kick=()=>{ if(started) resume(700); else start(); };
   ['pointerdown','touchstart','click','keydown'].forEach(ev=>
     document.addEventListener(ev,kick,{passive:true}));
 
@@ -1215,12 +1215,25 @@ h2{
     paint();
   });
 
-  /* her voice on the video wins over the music */
+  /* Bring the music back up, restarting it if something stopped it.
+     Phones hand a playing video exclusive use of the audio output and
+     pause everything else, so restoring the volume alone is not enough —
+     the element has to be told to play again. */
+  function resume(ms) {
+    if(!wanted||!started||document.hidden) return;
+    if(tune.paused) {
+      tune.volume=0;
+      const p=tune.play();
+      if(p&&p.then) p.then(()=>fadeTo(FULL,ms)).catch(()=>{});
+      else fadeTo(FULL,ms);
+    } else fadeTo(FULL,ms);
+  }
+
+  /* her voice on the video wins over the music, but only while it speaks */
   const vid=document.querySelector('video');
   if(vid) {
     vid.addEventListener('play',()=>{ if(started&&wanted) fadeTo(DUCK,400) });
-    ['pause','ended'].forEach(ev=>
-      vid.addEventListener(ev,()=>{ if(started&&wanted) fadeTo(FULL,900) }));
+    ['pause','ended'].forEach(ev=>vid.addEventListener(ev,()=>resume(900)));
   }
 
   /* don't sing to an empty room */
