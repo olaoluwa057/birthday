@@ -1,13 +1,13 @@
 # Happy Birthday, Oluwafolabomi 💗
 
-An interactive birthday storybook — an 11-page flipbook you turn by dragging,
+An interactive birthday storybook — a 12-page flipbook you turn by dragging,
 swiping, or using the arrow keys.
 
 ## Contents
 
 | File | What it is |
 | --- | --- |
-| `index.html` | The whole site: markup, styles, script, and all 18 photographs embedded as base64. No build step, no dependencies. |
+| `index.html` | The whole site: markup, styles, script, and all 23 photographs embedded as base64. No build step, no dependencies. |
 | `media/love-me-jeje.mp3` | The soundtrack — Tems, *Love Me JeJe*. Kept as a separate file so it streams instead of delaying the page. |
 | `vercel.json` | Vercel config (`cleanUrls`). |
 
