@@ -1158,7 +1158,7 @@ h2{
   const btn=document.getElementById('music');
   if(!tune||!btn) return;
 
-  const KEY='book-music';
+  const KEY='book-music-2';   /* new key: an old stored mute no longer wins */
   const FULL=.55;          /* under the page, never over it */
   const DUCK=.05;          /* out of the way while the video speaks */
   let wanted=true;
@@ -1191,10 +1191,20 @@ h2{
     else fadeTo(FULL,2600);
   }
 
-  /* any first touch of the book counts as permission to play */
+  /* any first touch of anything counts as permission to play */
   const kick=()=>start();
-  document.addEventListener('pointerdown',kick);
-  document.addEventListener('keydown',kick);
+  ['pointerdown','touchstart','click','keydown'].forEach(ev=>
+    document.addEventListener(ev,kick,{passive:true}));
+
+  /* Once the page itself is down, buffer the track and try to start it
+     unprompted. Most browsers refuse audible sound before a gesture and
+     the promise just rejects — but where it is allowed, she never has to
+     ask for it, and where it is not, the audio is at least already loaded
+     so her first touch plays instantly instead of buffering. */
+  addEventListener('load',()=>{
+    try{ tune.preload='auto'; tune.load(); }catch(_e){}
+    start();
+  });
 
   btn.addEventListener('click',e=>{
     e.stopPropagation();
