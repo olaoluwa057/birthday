@@ -520,6 +520,95 @@ h2{
 /* widths carry the shapes here, which lands all four at one height */
 .memory .mount{width:100%;height:auto;max-height:100%}
 
+/* ---------- voice notes ---------- */
+.notes{
+  flex:1;min-height:0;
+  display:flex;flex-direction:column;
+  justify-content:center;gap:12px;
+  margin-top:15px;
+}
+.vn{
+  display:flex;align-items:center;gap:14px;
+  width:min(100%,470px);
+  margin-inline:auto;
+  padding:14px 18px;
+  background:linear-gradient(#fffaf2,#f4e6d6);
+  border-radius:4px;
+  box-shadow:
+    0 2px 3px rgba(74,32,48,.16),
+    0 10px 22px rgba(74,32,48,.18),
+    inset 0 0 0 1px rgba(150,104,72,.16);
+}
+.vn-play{
+  flex:none;
+  width:46px;height:46px;
+  border-radius:50%;
+  border:1px solid rgba(169,128,63,.55);
+  background:linear-gradient(#fdf1e2,#e9d0b4);
+  color:var(--wine);
+  cursor:pointer;
+  display:grid;place-items:center;
+  box-shadow:0 3px 8px rgba(62,22,38,.22),inset 0 1px 0 rgba(255,255,255,.75);
+  transition:transform .18s ease;
+}
+.vn-play:hover{transform:translateY(-1px)}
+/* a drawn triangle, so it matches the ink rather than a system glyph */
+.vn-icon{
+  width:0;height:0;
+  margin-left:3px;
+  border-left:12px solid currentColor;
+  border-top:8px solid transparent;
+  border-bottom:8px solid transparent;
+}
+.vn.playing .vn-icon{
+  width:12px;height:15px;
+  margin-left:0;
+  border:0;
+  background:linear-gradient(to right,
+    currentColor 0 4px,transparent 4px 8px,currentColor 8px 12px);
+}
+.vn-main{flex:1;min-width:0}
+.vn-name{
+  font-size:10px;
+  letter-spacing:.2em;
+  text-transform:uppercase;
+  color:#95563f;
+  font-weight:700;
+  margin-bottom:9px;
+}
+.vn-track{
+  position:relative;
+  height:3px;
+  border-radius:2px;
+  background:rgba(150,104,72,.24);
+  cursor:pointer;
+}
+.vn-fill{
+  position:absolute;
+  left:0;top:0;bottom:0;
+  width:0;
+  border-radius:2px;
+  background:linear-gradient(90deg,var(--gold),var(--gold-lt));
+}
+.vn-fill::after{
+  content:"";
+  position:absolute;
+  right:-4px;top:50%;
+  width:8px;height:8px;
+  transform:translateY(-50%) rotate(45deg);
+  background:var(--gold);
+  opacity:.9;
+}
+.vn-time{
+  flex:none;
+  font-size:12px;
+  letter-spacing:.06em;
+  color:var(--ink2);
+  font-variant-numeric:tabular-nums;
+  min-width:34px;
+  text-align:right;
+}
+
 /* five prints: three over two, each row packed and centred */
 .five{
   flex:1;min-height:0;
@@ -695,6 +784,8 @@ h2{
   .five .row:last-child .mount:last-child{
     grid-column:1/-1;width:calc(50% - 4.5px);justify-self:center;
   }
+  .vn{gap:11px;padding:12px 14px}
+  .vn-play{width:42px;height:42px}
   .mount{padding:5px}
   .mount::after{background-size:19px 19px}
   .duo,.grid4,.memory,.side{gap:9px}
@@ -872,6 +963,31 @@ h2{
         <div class="face back"><div class="back-mark">My girl ♡</div></div>
       </section>
 
+      <section class="page" data-label="A Voice Note">
+        <div class="face front">
+          <div class="inner">
+            <div class="kicker">Page 10 &middot; A voice note</div>
+            <h2>And you &mdash; stop being naughty.</h2>
+            <div class="line"></div>
+            <p class="copy">Press play. You know exactly what you said, and you know exactly why I kept it.</p>
+            <div class="notes">
+              <div class="vn">
+                <button class="vn-play" type="button" aria-label="Play the voice note">
+                  <span class="vn-icon"></span>
+                </button>
+                <div class="vn-main">
+                  <div class="vn-name">A voice note from you</div>
+                  <div class="vn-track"><span class="vn-fill"></span></div>
+                </div>
+                <div class="vn-time">0:00</div>
+                <audio class="vn-audio" preload="metadata" src="media/vn-1.m4a"></audio>
+              </div>
+            </div>
+          </div>
+          <div class="edge-curl"></div>
+        </div>
+        <div class="face back"><div class="back-mark">Your voice &hearts;</div></div>
+      </section>
       <section class="page future" data-label="The Future">
         <div class="face front">
           <div class="inner">
@@ -987,6 +1103,7 @@ h2{
     next.disabled=index===pages.length-1;
     [...dots.children].forEach((d,i)=>d.classList.toggle('active',i===index));
     updateStacks();
+    document.dispatchEvent(new CustomEvent('book:page',{detail:index}));
   }
 
   /* slow to lift, quicker through the fall, gentle into the rest */
@@ -1113,7 +1230,7 @@ h2{
 
   function pointerDown(e) {
     if(busy) return;
-    if(e.target.closest('video,button,a')) return;
+    if(e.target.closest('button,a,.vn')) return;
 
     const rect=wrap.getBoundingClientRect();
     const x=e.clientX-rect.left;
@@ -1250,8 +1367,11 @@ h2{
      Phones hand a playing video exclusive use of the audio output and
      pause everything else, so restoring the volume alone is not enough —
      the element has to be told to play again. */
+  const aNoteIsPlaying=()=>
+    [...document.querySelectorAll('.vn-audio')].some(a=>!a.paused);
+
   function resume(ms) {
-    if(!wanted||!started||document.hidden) return;
+    if(!wanted||!started||document.hidden||aNoteIsPlaying()) return;
     if(tune.paused) {
       tune.volume=0;
       const p=tune.play();
@@ -1260,6 +1380,12 @@ h2{
     } else fadeTo(FULL,ms);
   }
 
+  /* a voice note takes the floor; the music waits, then comes back */
+  document.addEventListener('music:hush',()=>{
+    if(started&&!tune.paused) tune.pause();
+  });
+  document.addEventListener('music:back',()=>resume(900));
+
   /* don't sing to an empty room */
   document.addEventListener('visibilitychange',()=>{
     if(document.hidden){ if(started&&!tune.paused) tune.pause() }
@@ -1267,6 +1393,84 @@ h2{
   });
 
   paint();
+})();
+
+/* ---------- her voice, in its own little player ---------- */
+(() => {
+  const notes=[...document.querySelectorAll('.vn')];
+  if(!notes.length) return;
+
+  const clock=s=>{
+    if(!isFinite(s)||s<0) s=0;
+    return Math.floor(s/60)+':'+String(Math.floor(s%60)).padStart(2,'0');
+  };
+
+  notes.forEach(vn=>{
+    const audio=vn.querySelector('.vn-audio');
+    const btn=vn.querySelector('.vn-play');
+    const fill=vn.querySelector('.vn-fill');
+    const track=vn.querySelector('.vn-track');
+    const time=vn.querySelector('.vn-time');
+
+    function paint() {
+      const d=audio.duration, t=audio.currentTime;
+      fill.style.width=(isFinite(d)&&d>0 ? (t/d)*100 : 0)+'%';
+      /* resting, it shows how long the note is; playing, how far in she is */
+      time.textContent=clock(audio.paused&&!t ? d : t);
+    }
+
+    function marked(playing) {
+      vn.classList.toggle('playing',playing);
+      btn.setAttribute('aria-label',
+        playing?'Pause the voice note':'Play the voice note');
+    }
+
+    audio.addEventListener('loadedmetadata',paint);
+    audio.addEventListener('timeupdate',paint);
+
+    btn.addEventListener('click',()=>{
+      if(audio.paused) {
+        notes.forEach(o=>{ if(o!==vn) o.querySelector('.vn-audio').pause() });
+        document.dispatchEvent(new Event('music:hush'));
+        const p=audio.play();
+        if(p&&p.catch) p.catch(()=>marked(false));
+      } else audio.pause();
+    });
+
+    audio.addEventListener('play',()=>{
+      marked(true);
+      document.dispatchEvent(new Event('music:hush'));
+    });
+    audio.addEventListener('pause',()=>{
+      marked(false);
+      document.dispatchEvent(new Event('music:back'));
+    });
+    audio.addEventListener('ended',()=>{
+      audio.currentTime=0;
+      paint();
+      marked(false);
+      document.dispatchEvent(new Event('music:back'));
+    });
+
+    /* tap anywhere along the line to move through the note */
+    track.addEventListener('click',e=>{
+      if(!isFinite(audio.duration)) return;
+      const r=track.getBoundingClientRect();
+      audio.currentTime=audio.duration*
+        Math.max(0,Math.min(1,(e.clientX-r.left)/r.width));
+      paint();
+    });
+
+    paint();
+  });
+
+  /* turning the page away from a note stops it */
+  document.addEventListener('book:page',()=>{
+    notes.forEach(vn=>{
+      const a=vn.querySelector('.vn-audio');
+      if(!a.paused) a.pause();
+    });
+  });
 })();
 </script>
 </body>
